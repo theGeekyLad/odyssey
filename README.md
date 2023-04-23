@@ -39,6 +39,8 @@ Overall, the Odyssey app provides a unique and comprehensive approach to explori
 
 ## How we built it
 
+### Android
+
 ## Challenges we ran into
 
 ## Accomplishments that we're proud of
@@ -54,7 +56,7 @@ Overall, the Odyssey app provides a unique and comprehensive approach to explori
 ### Android
 
 - [ ] Change place type to checkboxes - multi-select
-- [ ] Change API call structure
+- [x] Change API call structure
 
 ### Misc.
 
