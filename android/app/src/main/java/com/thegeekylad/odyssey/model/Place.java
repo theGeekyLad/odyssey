@@ -1,5 +1,7 @@
 package com.thegeekylad.odyssey.model;
 
+import android.util.Log;
+
 import com.thegeekylad.odyssey.util.Constants;
 
 import org.json.JSONException;
@@ -13,11 +15,11 @@ public class Place {
 
     public Place(String response) throws JSONException {
         JSONObject jsonObject = new JSONObject(response);
-        title = jsonObject.getString("title");
+        title = jsonObject.getString("name");
         lat = jsonObject.getDouble("lat");
-        lon = jsonObject.getDouble("lon");
-        type = jsonObject.getString("type");
-        iconUrl = jsonObject.getString("icon_url");
+        lon = jsonObject.getDouble("lng");
+        type = jsonObject.getJSONArray("placeTypes").getString(0);
+        iconUrl = jsonObject.getString("icon");
     }
 
     public static class Filter {
@@ -29,6 +31,11 @@ public class Place {
             radius = Constants.RADIUS_DEFAULT;
             detail = 3;
             type = null;
+        }
+
+        public Filter(float detail) {
+            this();
+            this.detail = detail;
         }
     }
 }

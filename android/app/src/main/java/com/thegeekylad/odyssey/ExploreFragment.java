@@ -10,7 +10,6 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.util.ArraySet;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,6 +35,7 @@ import com.thegeekylad.odyssey.viewmodel.MainActivityViewModel;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -55,7 +55,7 @@ public class ExploreFragment extends Fragment {
     private Slider sliderRadius;
     private Slider sliderDetail;
     private Place.Filter filter;
-    private Stop filterByStop;
+    private Stop stopBySpecific;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -89,7 +89,7 @@ public class ExploreFragment extends Fragment {
         recyclerListPlaces.setLayoutManager(new LinearLayoutManager(getContext()));
         buttonLoadPlaces.setOnClickListener(v -> {
             toggleFiltersCollapsible();
-            if (filterByStop == null)
+            if (stopBySpecific == null)
                 loadPlaces(viewModel.selectedBusIndex, filter);
             else
                 loadPlaces(filter);
@@ -107,10 +107,10 @@ public class ExploreFragment extends Fragment {
 
         // are you coming from fragment destination?
         try {
-            filterByStop = new Stop(getArguments().getString("stop"));
+            stopBySpecific = new Stop(getArguments().getString("stop"));
             rootView.findViewById(R.id.slider_detail).setVisibility(View.GONE);
             filter.detail = 0;
-            ((TextView) rootView.findViewById(R.id.text_title_stop_selected)).setText(filterByStop.name);
+            ((TextView) rootView.findViewById(R.id.text_title_stop_selected)).setText(stopBySpecific.name);
             loadPlaces(filter);
         } catch (Exception e) {
             e.printStackTrace();
@@ -150,7 +150,7 @@ public class ExploreFragment extends Fragment {
                                 for (int i = 0; i < array.length(); i++) {
                                     Bus bus = new Bus(array.get(i).toString());
                                     viewModel.nearbyBusesList.add(bus);
-                                    busesList.add(bus.busName);
+                                    busesList.add(bus.busName + (!bus.headSign.isEmpty() ? String.format(" (%s)", bus.headSign) : ""));
                                 }
                                 dropdownBuses.setSimpleItems(busesList.toArray(new String[]{}));
                             } catch (JSONException e) {
@@ -171,8 +171,9 @@ public class ExploreFragment extends Fragment {
     // on select bus
     public void loadPlaces(int position, Place.Filter filter) {
         // get buses at this stop
-        api.getAllPlaces(
-                viewModel.nearbyBusesList.get(position).busId,
+        api.getPlaces(
+                viewModel.nearbyBusesList.get(position),
+                viewModel.nearbyStopsList.get(position).stopId,
                 filter,
                 new Response.Listener<String>() {
                     @Override
@@ -186,7 +187,7 @@ public class ExploreFragment extends Fragment {
                                 viewModel.placesList.add(place);
                                 viewModel.placeTypesSet.add(place.type);
                             }
-                            SimplePlacesAdapter simplePlacesAdapter = new SimplePlacesAdapter(viewModel.placesList);
+                            SimplePlacesAdapter simplePlacesAdapter = new SimplePlacesAdapter(getContext(), viewModel.placesList);
                             recyclerListPlaces.setAdapter(simplePlacesAdapter);
 
                             dropdownPlaceTypes.setSimpleItems(viewModel.placeTypesSet.toArray(new String[]{}));
@@ -208,7 +209,9 @@ public class ExploreFragment extends Fragment {
     public void loadPlaces(Place.Filter filter) {
         // get buses at this stop
         api.getPlaces(
-                filterByStop.stopId,
+                viewModel.nearbyBusesList.get(viewModel.selectedBusIndex),
+                stopBySpecific.stopId,
+                filter,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
@@ -221,7 +224,7 @@ public class ExploreFragment extends Fragment {
                                 viewModel.placesList.add(place);
                                 viewModel.placeTypesSet.add(place.type);
                             }
-                            SimplePlacesAdapter simplePlacesAdapter = new SimplePlacesAdapter(viewModel.placesList);
+                            SimplePlacesAdapter simplePlacesAdapter = new SimplePlacesAdapter(getContext(), viewModel.placesList);
                             recyclerListPlaces.setAdapter(simplePlacesAdapter);
 
                             dropdownPlaceTypes.setSimpleItems(viewModel.placeTypesSet.toArray(new String[]{}));
@@ -275,7 +278,7 @@ public class ExploreFragment extends Fragment {
                         public void onResponse(String response) {
                             try {
                                 List<String> stopsList = new ArrayList<>();
-                                JSONArray array = new JSONArray(response);
+                                JSONArray array = new JSONObject(response).getJSONArray("stops");
                                 for (int i = 0; i < array.length(); i++) {
                                     Stop stop = new Stop(array.get(i).toString());
                                     viewModel.nearbyStopsList.add(stop);

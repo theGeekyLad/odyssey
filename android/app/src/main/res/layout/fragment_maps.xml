@@ -37,9 +37,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:contentDescription="Test"
-            android:value="3"
+            android:value="1"
             android:stepSize="1"
-            android:valueFrom="3"
+            android:valueFrom="1"
             android:valueTo="10" />
     </LinearLayout>
 

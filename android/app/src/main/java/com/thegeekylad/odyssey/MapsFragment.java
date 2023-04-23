@@ -52,6 +52,8 @@ import com.google.maps.model.DirectionsResult;
 import com.google.maps.model.DirectionsRoute;
 import com.google.maps.model.DirectionsStep;
 import com.google.maps.model.EncodedPolyline;
+import com.thegeekylad.odyssey.adapter.SimplePlacesAdapter;
+import com.thegeekylad.odyssey.adapter.SimpleStopsAdapter;
 import com.thegeekylad.odyssey.model.Bus;
 import com.thegeekylad.odyssey.model.Place;
 import com.thegeekylad.odyssey.model.Stop;
@@ -67,6 +69,7 @@ import org.json.JSONObject;
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -171,22 +174,20 @@ public class MapsFragment extends Fragment {
                 .pattern(Arrays.<PatternItem>asList(new Dash(40), new Gap(10)));
 
         // load map data
-        api.getMapView(
-                viewModel.nearbyBusesList.get(viewModel.selectedBusIndex).busId,
-                sliderDetailValue,
+        api.getAllStops(
+                viewModel.nearbyBusesList.get(viewModel.selectedBusIndex),
+                viewModel.nearbyStopsList.get(viewModel.selectedStopIndex).stopId,
                 new Response.Listener<String>() {
+                    @SuppressLint("WrongViewCast")
                     @Override
                     public void onResponse(String response) {
-
-                        clearMarkersAndReinitialize();
-
                         try {
-                            JSONObject resObj = new JSONObject(response);
-                            JSONArray stopsArr = resObj.getJSONArray("stops");
-                            JSONArray placesArr = resObj.getJSONArray("places");
+                            clearMarkersAndReinitialize();
 
-                            for (int i = 0; i < stopsArr.length(); i++) {
-                                Stop stop = new Stop(stopsArr.get(i).toString());
+                            List<Stop> stopsList = new ArrayList<>();
+                            JSONArray array = new JSONArray(response);
+                            for (int i = 0; i < array.length(); i++) {
+                                Stop stop = new Stop(array.get(i).toString());
                                 LatLng stopCoordinates = new LatLng(stop.lat, stop.lon);
                                 MarkerOptions markerOptions = new MarkerOptions()
                                         .position(stopCoordinates)
@@ -197,18 +198,44 @@ public class MapsFragment extends Fragment {
                                 lineOptions.add(stopCoordinates);
                             }
 
-                            for (int i = 0; i < placesArr.length(); i++) {
-                                Place place = new Place(placesArr.get(i).toString());
-                                LatLng placeCoordinates = new LatLng(place.lat, place.lon);
-                                MarkerOptions placeMarkerOptions = new MarkerOptions()
-                                        .position(placeCoordinates)
-                                        .title(place.title)
-                                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE));
-                                placeMarkers.add(googleMap.addMarker(placeMarkerOptions));
-                            }
+                            // load places info
+                            Log.e("sliderDetailValue", sliderDetailValue + "");
+                            api.getPlaces(
+                                    viewModel.nearbyBusesList.get(viewModel.selectedBusIndex),
+                                    viewModel.nearbyStopsList.get(viewModel.selectedStopIndex).stopId,
+                                    new Place.Filter(sliderDetailValue),
+                                    new Response.Listener<String>() {
+                                        @Override
+                                        public void onResponse(String response) {
+                                            try {
+                                                JSONArray array = new JSONArray(response);
+                                                viewModel.placesList = new ArrayList<>();
+                                                viewModel.placeTypesSet = new HashSet<>();
+                                                for (int i = 0; i < array.length(); i++) {
+                                                    Place place = new Place(array.get(i).toString());
+                                                    LatLng placeCoordinates = new LatLng(place.lat, place.lon);
+                                                    MarkerOptions placeMarkerOptions = new MarkerOptions()
+                                                            .position(placeCoordinates)
+                                                            .title(place.title)
+                                                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE));
+                                                    placeMarkers.add(googleMap.addMarker(placeMarkerOptions));
+                                                }
 
-//                                        lineOptions.addAll(getRouteLineMarkers());
-                            googleMap.addPolyline(lineOptions);
+                                                // lineOptions.addAll(getRouteLineMarkers());
+
+                                                googleMap.addPolyline(lineOptions);
+                                            } catch (JSONException e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+                                    },
+                                    new Response.ErrorListener() {
+                                        @Override
+                                        public void onErrorResponse(VolleyError error) {
+                                            error.printStackTrace();
+                                        }
+                                    }
+                            );
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }

@@ -16,8 +16,8 @@ public class Bus {
 
     public Bus(String response) throws JSONException {
         JSONObject jsonObject = new JSONObject(response);
-        busName = jsonObject.getString("bus_name");
-        busId = jsonObject.getString("bus_id");
-        headSign = jsonObject.getString("head_sign");
+        busName = jsonObject.getString("busName");
+        busId = jsonObject.getString("globalRouteId");
+        headSign = jsonObject.getString("directionHeader");
     }
 }

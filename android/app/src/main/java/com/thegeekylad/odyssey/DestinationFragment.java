@@ -69,7 +69,8 @@ public class DestinationFragment extends Fragment {
 
     public void loadAllStops() {
         api.getAllStops(
-                viewModel.nearbyBusesList.get(viewModel.selectedBusIndex).busId,
+                viewModel.nearbyBusesList.get(viewModel.selectedBusIndex),
+                viewModel.nearbyStopsList.get(viewModel.selectedStopIndex).stopId,
                 new Response.Listener<String>() {
                     @SuppressLint("WrongViewCast")
                     @Override
